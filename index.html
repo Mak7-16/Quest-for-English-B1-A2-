@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Holiday Escape Room</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root{--ac:#ff8a1f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{min-height:100vh;color:#f5f1ff;background:#1a1030;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;transition:background .6s}
+.card{background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(6px);border-radius:1rem}
+.btn{background:var(--ac);color:#111;font-weight:700;border-radius:.75rem;padding:.6rem 1.1rem;transition:transform .15s}
+.btn:hover{transform:scale(1.04)}
+.inp{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:.6rem;padding:.55rem .8rem;color:#fff;width:100%}
+.inp option{color:#111}
+.obj{font-size:3rem;padding:.8rem;border-radius:1rem;background:rgba(255,255,255,.08);transition:transform .15s}
+.obj:hover{transform:scale(1.12) rotate(-4deg);background:rgba(255,255,255,.18)}
+.shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.fall{position:fixed;top:-3rem;pointer-events:none;opacity:.5;animation:fl linear infinite;z-index:0}
+@keyframes fl{to{transform:translateY(110vh) rotate(360deg)}}
+.sel{outline:3px solid var(--ac);background:rgba(255,255,255,.25)}
+.dig{width:3.5rem;height:4.5rem;text-align:center;font-size:2rem;font-weight:800}
+</style>
+</head>
+<body>
+<div id="fx"></div>
+<main class="relative z-10 max-w-3xl mx-auto p-4">
+
+<section id="menu" class="card p-6 mt-6 text-center space-y-4">
+  <div class="text-5xl">🗝️</div>
+  <h1 class="text-3xl font-extrabold">Holiday Escape Room</h1>
+  <p class="opacity-80">Вебквест для вивчення англійської. Розв’яжіть загадки та відчиніть двері!</p>
+  <label class="block text-left text-sm">Свято / подія
+    <select id="hol" class="inp mt-1">
+      <option value="halloween">🎃 Хелловін (Halloween)</option>
+      <option value="christmas">🎄 Різдво (Christmas)</option>
+      <option value="valentine">💘 День Святого Валентина (St. Valentine’s Day)</option>
+      <option value="easter">🐰 Великдень (Easter)</option>
+      <option value="newyear">🎆 Новий Рік (New Year)</option>
+    </select></label>
+  <label class="block text-left text-sm">Рівень англійської
+    <select id="lvl" class="inp mt-1">
+      <option value="0">A1 – Beginner</option><option value="1">A2 – Elementary</option>
+      <option value="2" selected>B1 – Intermediate</option><option value="3">B2 – Upper-Intermediate</option>
+      <option value="4">C1 – Advanced</option><option value="5">C2 – Proficiency</option>
+    </select></label>
+  <button class="btn w-full text-lg" onclick="start()">Розпочати квест</button>
+</section>
+
+<section id="game" class="hidden space-y-3 mt-2">
+  <div class="card p-3 flex items-center justify-between gap-2 flex-wrap">
+    <div id="ttl" class="font-bold"></div>
+    <div id="prog" class="text-xl tracking-widest"></div>
+    <div class="font-mono">⏱ <span id="tm">00:00</span></div>
+  </div>
+  <div id="story" class="card p-4 italic"></div>
+  <div id="stage" class="card p-4"></div>
+  <div id="msg" class="card p-3 min-h-[3rem]"></div>
+  <div class="card p-3">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div><span class="text-sm opacity-70">🎒 Інвентар:</span> <span id="inv"></span></div>
+      <div class="text-sm">🔢 Код: <b id="dgs" class="text-lg"></b></div>
+      <button class="btn" onclick="hint()">💡 Hint</button>
+    </div>
+  </div>
+</section>
+
+<section id="win" class="hidden card p-6 mt-6 text-center space-y-4">
+  <div class="text-6xl">🏆</div>
+  <h2 class="text-3xl font-extrabold">You escaped!</h2>
+  <p>Ви втекли за <b id="wt" class="text-xl"></b>. Підказок використано: <b id="wh"></b></p>
+  <div class="text-left"><h3 class="font-bold mb-2">📖 Словничок квесту</h3><ul id="gl" class="grid sm:grid-cols-2 gap-2"></ul></div>
+  <button class="btn" onclick="location.reload()">Грати ще раз</button>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+// d=[digit1,digit2], t=3 reading texts, q=3 questions, a=answer digit, g=glossary
+const D={
+halloween:{n:'Halloween',e:'🎃',bg:'linear-gradient(160deg,#100818,#2b1245 60%,#3a1a05)',ac:'#ff8a1f',fx:['🦇','👻','🕸️','🎃'],
+ place:'a haunted mansion',w:'pumpkin',
+ c:['It is orange and round. We make a face on it for Halloween.','This orange vegetable is carved with a scary face and lit with a candle on October 31st.','Hollowed out and fitted with a flickering candle, this gourd grins from doorsteps on All Hallows’ Eve.'],
+ it:['🎃','pumpkin key'],obj:[['🦇','bat','spooky'],['🕯️','candle','flickering'],['🕸️','cobweb','dusty']],d:[7,1],a:3,
+ t:['Tom has a party. There are 3 ghosts in the room. They like sweets.','At the party, five ghosts floated by the window while two witches stirred a cauldron.','Of the nine creatures that haunted the ballroom, six were spectres; the rest, hunched over a cauldron, were witches.'],
+ q:['How many ghosts are there?','How many more ghosts than witches were there?','How many witches were there?'],
+ g:'pumpkin:гарбуз|bat:кажан|candle:свічка|cobweb:павутиння|witch:відьма|ghost:привид|cauldron:казан|spectre:примара'},
+christmas:{n:'Christmas',e:'🎄',bg:'linear-gradient(160deg,#0b2236,#14506b 55%,#0f3d2e)',ac:'#ff4d5e',fx:['❄️','⭐','🎄','❅'],
+ place:'Santa’s snowy workshop',w:'snowman',
+ c:['It is made of snow. It has a carrot nose and a hat.','Children roll three balls of snow, stack them up and give it a carrot nose and a scarf.','Fashioned from three stacked spheres of packed snow, this frosty fellow sports a coal-button smile and a carrot for a nose.'],
+ it:['🍬','candy cane key'],obj:[['🧦','stocking','woolly'],['🔔','bell','jingling'],['🎁','present','sparkling']],d:[2,5],a:4,
+ t:['Anna puts 4 candles on the table. Her family eats dinner. They sing songs.','Before dinner, Anna lit six candles, but two blew out when her brother opened the door.','Of the ten guests squeezed around the table, only a handful had remembered gifts; six had arrived empty-handed.'],
+ q:['How many candles are on the table?','How many candles were still burning?','How many guests had brought gifts?'],
+ g:'snowman:сніговик|stocking:панчоха|bell:дзвіночок|present:подарунок|candle:свічка|candy cane:льодяникова тростина|guest:гість|empty-handed:з порожніми руками'},
+valentine:{n:'St. Valentine’s Day',e:'💘',bg:'linear-gradient(160deg,#3b0a24,#7a1745 60%,#b02a63)',ac:'#ff7aa8',fx:['💖','💌','🌹','💕'],
+ place:'a romantic old café',w:'rose',
+ c:['It is a red flower. People give it to someone they love.','This thorny red flower is the classic symbol of romance, often delivered in a bouquet.','Prized for its velvety crimson petals and its thorny stem, this bloom is the quintessential emblem of ardent affection.'],
+ it:['💌','love letter'],obj:[['🍫','chocolate','sweet'],['🧸','teddy bear','soft'],['💍','ring','shiny']],d:[9,4],a:2,
+ t:['Ben buys 2 roses for Kate. They are red. Kate is happy.','Ben bought a bouquet of eight roses, but gave six to his grandmother and kept the rest for Kate.','Of the dozen letters sent anonymously, ten were swiftly discarded as clumsy; the remainder, unsigned, were treasured.'],
+ q:['How many roses does Ben buy?','How many roses did Kate get?','How many letters were treasured?'],
+ g:'rose:троянда|chocolate:шоколад|teddy bear:плюшевий ведмедик|ring:перстень|bouquet:букет|discard:викидати|treasure:цінувати|anonymous:анонімний'},
+easter:{n:'Easter',e:'🐰',bg:'linear-gradient(160deg,#173b2a,#4c9a6a 55%,#e9d98a)',ac:'#b86bff',fx:['🥚','🐣','🌷','🐰'],
+ place:'a sunny spring garden',w:'bunny',
+ c:['It has long ears and soft fur. It brings eggs at Easter.','According to tradition, this long-eared animal hides coloured eggs in the garden for children to find.','Folklore has it that this long-eared, hopping creature clandestinely scatters decorated eggs across gardens on Easter morning.'],
+ it:['🥚','golden egg'],obj:[['🐣','chick','fluffy'],['🧺','basket','wicker'],['🌷','tulip','fragrant']],d:[3,8],a:6,
+ t:['Lily finds 6 eggs in the garden. They are blue and yellow.','Lily’s father hid ten eggs, but she found only four before it began to rain.','A dozen eggs were hidden; by noon the children, undeterred by drizzle, had unearthed all but half of them.'],
+ q:['How many eggs does Lily find?','How many eggs are still hidden?','How many eggs remained hidden?'],
+ g:'bunny:кролик|chick:курча|basket:кошик|tulip:тюльпан|egg:яйце|hide:ховати|drizzle:мжичка|unearth:відкопати'},
+newyear:{n:'New Year',e:'🎆',bg:'linear-gradient(160deg,#050a24,#10205a 60%,#3b2a6b)',ac:'#ffd34d',fx:['✨','🎆','🥂','⭐'],
+ place:'a grand clock tower',w:'fireworks',
+ c:['They are bright lights in the night sky. We watch them at midnight.','At midnight, these colourful explosions light up the sky while crowds cheer and count down.','Erupting in dazzling bursts of colour above the rooftops, these pyrotechnics herald the stroke of midnight.'],
+ it:['📜','resolution scroll'],obj:[['🥂','champagne glass','crystal'],['⏰','clock','ticking'],['🎉','confetti','colourful']],d:[1,6],a:7,
+ t:['Max waits for midnight. He has 7 friends at the party. They count down.','Ten people came to Max’s party, but three left early to catch the last train.','Of the fourteen revellers who had gathered, precisely half lingered until the stroke of midnight.'],
+ q:['How many friends does Max have at the party?','How many people stayed until midnight?','How many revellers stayed until midnight?'],
+ g:'fireworks:феєрверк|clock:годинник|confetti:конфеті|midnight:північ|resolution:новорічне рішення|revellers:гуляки|linger:затримуватися|herald:сповіщати'}
+};
+const X=(k,o)=>Object.assign(D[k],o);
+X('halloween',{o2:[['🧙','witch hat','pointed'],['📖','spell book','ancient'],['🪞','mirror','cracked']],
+ f:[['Bats are the only mammals that can truly fly.','Кажани — єдині ссавці, які справді літають.'],['Halloween comes from the ancient Celtic festival Samhain.','Гелловін походить від давньокельтського свята Самайн.'],['In Ireland people first carved turnips, not pumpkins.','В Ірландії спочатку вирізали ріпу, а не гарбузи.'],['Trick-or-treating became popular in America in the 1950s.','Колядування «цукерка або жарт» стало популярним в Америці в 1950-х.'],['The word “Halloween” means “holy evening”.','Слово «Halloween» означає «священний вечір».'],['Black cats were once believed to be witches’ helpers.','Колись вважали, що чорні коти — помічники відьом.']],
+ z:[['Which country does Halloween come from?',['Brazil','Ireland','Japan'],1,'З якої країни походить Гелловін?'],['What is the date of Halloween?',['1 January','14 February','31 October'],2,'Яка дата Гелловіну?'],['What did people carve first?',['Turnips','Apples','Melons'],0,'Що спершу вирізали?']],
+ g2:'witch hat:капелюх відьми|spell book:книга заклять|mirror:дзеркало|turnip:ріпа|carve:вирізати'});
+X('christmas',{o2:[['🦌','reindeer','fast'],['🎄','Christmas tree','tall'],['🍪','cookie','tasty']],
+ f:[['Children hang stockings by the fireplace for Santa.','Діти вішають панчохи біля каміна для Санти.'],['“Jingle Bells” was one of the first songs played in space, in 1965.','«Jingle Bells» — одна з перших пісень, виконаних у космосі, 1965 року.'],['In Spain, children get gifts on 6 January from the Three Kings.','В Іспанії діти отримують подарунки 6 січня від Трьох королів.'],['Santa’s reindeer are said to be nine in total, with Rudolph.','Кажуть, що в Санти дев’ять оленів разом з Рудольфом.'],['The first decorated Christmas trees appeared in Germany.','Перші прикрашені ялинки з’явилися в Німеччині.'],['In Britain, children leave mince pies for Santa and carrots for his reindeer.','У Британії діти залишають Санті пиріжки, а оленям — моркву.']],
+ z:[['Who brings presents in many countries?',['Santa Claus','The Easter Bunny','Jack-o’-lantern'],0,'Хто приносить подарунки в багатьох країнах?'],['Which country did the decorated tree come from?',['France','Germany','Egypt'],1,'З якої країни походить прикрашена ялинка?'],['What do children hang by the fireplace?',['Masks','Bikes','Stockings'],2,'Що діти вішають біля каміна?']],
+ g2:'reindeer:північний олень|Christmas tree:ялинка|cookie:печиво|fireplace:камін|jingle:дзвеніти'});
+X('valentine',{o2:[['💐','bouquet','fragrant'],['🏹','arrow','golden'],['🎵','music box','dreamy']],
+ f:[['Chocolate boxes for Valentine’s Day started in Victorian Britain.','Коробки шоколаду на День Валентина з’явилися у вікторіанській Британії.'],['In Japan, women give chocolate to men on 14 February.','У Японії жінки дарують шоколад чоловікам 14 лютого.'],['The ring finger was once believed to have a vein straight to the heart.','Колись вірили, що від безіменного пальця вена йде прямо до серця.'],['Red roses are the most popular Valentine’s flower in the world.','Червоні троянди — найпопулярніші квіти на День Валентина.'],['Cupid, the god of love, is shown with a bow and arrows.','Купідона, бога кохання, зображують з луком і стрілами.'],['The oldest known valentine was written in 1415 by a prisoner in the Tower of London.','Найдавніший відомий валентинку написав у 1415 році в’язень Тауера.']],
+ z:[['Who is the god of love with a bow?',['Cupid','Zeus','Santa'],0,'Хто бог кохання з луком?'],['What is the date of Valentine’s Day?',['31 October','14 February','25 December'],1,'Яка дата Дня Валентина?'],['Which flower is the symbol of love?',['Tulip','Daisy','Red rose'],2,'Яка квітка — символ кохання?']],
+ g2:'bouquet:букет|arrow:стріла|music box:музична скринька|Cupid:Купідон|prisoner:в’язень'});
+X('easter',{o2:[['🥕','carrot','orange'],['🐑','lamb','woolly'],['🎨','paint box','messy']],
+ f:[['Chicks and eggs are symbols of new life in spring.','Курчата і яйця — символи нового життя навесні.'],['In many countries, children hunt for hidden eggs in baskets.','У багатьох країнах діти шукають сховані яйця в кошиках.'],['Tulips are a popular spring flower, famous in the Netherlands.','Тюльпани — весняні квіти, відомі в Нідерландах.'],['The Easter Bunny is said to love carrots.','Кажуть, що Великодній Кролик обожнює моркву.'],['In many cultures, the lamb is a symbol of Easter.','У багатьох культурах ягня — символ Великодня.'],['In Ukraine, people paint beautiful eggs called pysanky.','В Україні розписують чудові яйця — писанки.']],
+ z:[['What do children look for at Easter?',['Presents','Hidden eggs','Pumpkins'],1,'Що шукають діти на Великдень?'],['What are painted Ukrainian eggs called?',['Pysanky','Pierogi','Matryoshka'],0,'Як називаються розписані українські яйця?'],['Which animal brings the eggs?',['Reindeer','Bat','Bunny'],2,'Яка тварина приносить яйця?']],
+ g2:'carrot:морква|lamb:ягня|paint box:коробка фарб|pysanka:писанка|spring:весна'});
+X('newyear',{o2:[['🍇','grapes','juicy'],['🎺','party horn','noisy'],['📅','calendar','torn']],
+ f:[['Many people make a toast at midnight.','Багато людей виголошують тост опівночі.'],['At midnight, people count down: ten, nine, eight…','Опівночі люди відлічують: десять, дев’ять, вісім…'],['Fireworks were invented in ancient China.','Феєрверки винайшли в Стародавньому Китаї.'],['In Spain, people eat twelve grapes at midnight for good luck.','В Іспанії опівночі їдять дванадцять виноградин на удачу.'],['In Scotland, New Year is called Hogmanay.','У Шотландії Новий рік називають Гогманай.'],['Many people make a New Year’s resolution: a promise to change.','Багато людей дають новорічне рішення — обіцянку змінитися.']],
+ z:[['What do people do at midnight?',['Sleep','Count down','Paint eggs'],1,'Що роблять люди опівночі?'],['What do Spaniards eat at midnight?',['Grapes','Apples','Cake'],0,'Що їдять іспанці опівночі?'],['Where were fireworks invented?',['Italy','Brazil','China'],2,'Де винайшли феєрверки?']],
+ g2:'grapes:виноград|party horn:дудка|calendar:календар|toast:тост|Hogmanay:Гогманай'});
+D.halloween.z.push(['What do people put inside a jack-o’-lantern?',['A candle','A fish','A book'],0,'Що кладуть у гарбуз-ліхтар?'],['What do children say at the door?',['Good night!','Trick or treat!','Happy birthday!'],1,'Що кажуть діти біля дверей?'],['Which animal is a symbol of Halloween?',['Dolphin','Cow','Bat'],2,'Яка тварина — символ Гелловіну?']);
+D.christmas.z.push(['What colour is Santa’s coat?',['Green','Blue','Red'],2,'Якого кольору пальто Санти?'],['What do people put on top of the tree?',['A star','A shoe','A cup'],0,'Що ставлять на верхівку ялинки?'],['Which animals pull Santa’s sleigh?',['Horses','Reindeer','Dogs'],1,'Які тварини тягнуть сани Санти?']);
+D.valentine.z.push(['What colour is the heart symbol?',['Red','Green','Black'],0,'Якого кольору символ серця?'],['What do people send on Valentine’s Day?',['Bills','Maps','Cards'],2,'Що надсилають на День Валентина?'],['What is a love letter?',['A recipe','A note about feelings','A bill'],1,'Що таке любовний лист?']);
+D.easter.z.push(['When do people celebrate Easter?',['In spring','In autumn','In winter'],0,'Коли святкують Великдень?'],['What do people often bake at Easter?',['Ice cream','Popcorn','Easter bread'],2,'Що часто печуть на Великдень?'],['Which young animal is a symbol of spring?',['Shark','Chick','Camel'],1,'Яка тваринка — символ весни?']);
+D.newyear.z.push(['Which month begins the New Year?',['June','January','March'],1,'Який місяць починає Новий рік?'],['What do people often decorate at New Year?',['A tree','A boat','A bridge'],0,'Що прикрашають на Новий рік?'],['When is the New Year countdown?',['At noon','At breakfast','At midnight'],2,'Коли відлік Нового року?']);
+function qz(){return `<h2 class="font-bold text-lg mb-2">🧠 Trivia hall</h2><p class="mb-3 text-sm opacity-80">${P(['Choose the answers. You need 2 correct.','Answer the questions. Get at least two right.','Field the questions; two correct answers will see you through.'])}</p>`+S.zq.map((z,i)=>`<div class="mb-3"><p class="font-semibold">${i+1}. ${z[0]}</p>${S.tier===0?`<p class="text-xs opacity-60">${z[3]}</p>`:''}<div class="flex flex-wrap gap-2 mt-1">${z[1].map((o,j)=>`<button class="px-3 py-1 rounded-lg bg-white/10 ${S.qa[i]===j?'sel':''}" onclick="pq(${i},${j})">${o}</button>`).join('')}</div></div>`).join('')+`<button class="btn" onclick="cq()">Check</button>`}
+function pq(i,j){S.qa[i]=j;$('stage').innerHTML=qz()}
+function cq(){const n=S.zq.filter((z,i)=>S.qa[i]===z[2]).length;
+ if(n<2){bad($('stage'));return say(`❌ ${n}/3. `+P(['You need 2. Try again!','You need at least two correct answers.','Not enough yet; two correct answers are required.']))}
+ S.st=3;render();say(`✅ ${n}/3 — `+P(['Great!','Well done!','Splendid work!']))}
+function go(){S.room=S.room?0:1;render()}
+let S;
+const P=a=>a[S.tier];
+const tm=s=>String(s).padStart(2,'0');
+const say=h=>$('msg').innerHTML=h;
+const scr=w=>{let a=[...w],r;do{r=[...a].sort(()=>Math.random()-.5).join('')}while(r===w);return r};
+
+function start(){
+  const k=$('hol').value,lv=+$('lvl').value,H=D[k];
+  S={H,lv,tier:[0,0,1,1,2,2][lv],st:0,dg:[],inv:[],sel:null,t0:Date.now(),hints:0,open:false};
+  S.zq=[...H.z].sort(()=>Math.random()-.5).slice(0,3).map(z=>{const o=z[1].map((t,i)=>[t,i===z[2]]).sort(()=>Math.random()-.5);return[z[0],o.map(x=>x[0]),o.findIndex(x=>x[1]),z[3]]});
+  S.d=[1+Math.random()*9|0,1+Math.random()*9|0];
+  document.body.style.background=H.bg;document.documentElement.style.setProperty('--ac',H.ac);
+  $('fx').innerHTML=Array.from({length:16},()=>`<span class="fall" style="left:${Math.random()*100}%;font-size:${1+Math.random()*1.5}rem;animation-duration:${8+Math.random()*10}s;animation-delay:-${Math.random()*12}s">${H.fx[Math.random()*H.fx.length|0]}</span>`).join('');
+  $('menu').classList.add('hidden');$('game').classList.remove('hidden');
+  $('ttl').textContent=`${H.e} ${H.n} · ${['A1','A2','B1','B2','C1','C2'][lv]}`;
+  $('story').textContent=P([`You are in ${H.place}. The door is locked. Find the code!`,
+   `You have wandered into ${H.place}, and the door has locked behind you. Solve three puzzles to find the code.`,
+   `No sooner had you stepped into ${H.place} than the door sealed itself shut; only by unravelling the puzzles scattered about can you hope to piece together the combination.`]);
+  setInterval(()=>{const s=(Date.now()-S.t0)/1000|0;$('tm').textContent=tm(s/60|0)+':'+tm(s%60)},500);
+  render();
+}
+function bar(){
+  $('prog').textContent=[0,1,2,3,4].map(i=>i<S.st?'✅':i===S.st?'🔸':'⚪').join(' ');
+  $('dgs').textContent=[0,1,2].map(i=>S.dg[i]??'_').join(' ');
+  $('inv').innerHTML=S.inv.length?S.inv.map((x,i)=>`<button class="obj !text-2xl !p-2 ${S.sel===i?'sel':''}" title="${x[1]}" onclick="selItem(${i})">${x[0]}</button>`).join(''):'<i class="opacity-60">—</i>';
+}
+function selItem(i){S.sel=S.sel===i?null:i;bar();say(S.sel===null?'':`<b>${S.inv[i][0]} ${S.inv[i][1]}</b> ${P(['is selected. Click an object.','is selected. Where could you use it?','is in your hand. Where might it fit?'])}`)}
+function render(){
+  const H=S.H,st=$('stage');bar();
+  if(S.st===0){
+    st.innerHTML=`<h2 class="font-bold text-lg mb-2">🔤 Puzzle 1 · Who am I?</h2><p class="mb-3">${P(H.c)}</p>
+    <p class="text-3xl font-mono tracking-[.3em] text-center mb-3" style="color:var(--ac)">${scr(H.w).toUpperCase()}</p>
+    <div class="flex gap-2"><input id="a1" class="inp" placeholder="Your answer…" onkeydown="if(event.key==='Enter')c1()"><button class="btn" onclick="c1()">OK</button></div>`;
+    say(P(['Unscramble the letters.','Unscramble the letters and solve the riddle.','Decipher the anagram, guided by the cryptic description.']));
+  }else if(S.st===1){
+    st.innerHTML=`<h2 class="font-bold text-lg mb-2">🔎 Puzzle 2 · Search the room</h2><p class="mb-3">${P(['Click the things. Read the facts. Go to Room 2. Use your item on the chest.','Click objects to read fun facts. Go to the other room, select your item in the bag, then click the chest.','Rummage through both rooms; the locked chest awaits in the second, and your inventory holds the key.'])}</p><p class="text-xs opacity-70 mb-3">📌 Що робити: клікайте на предмети (читайте цікавинки) → 🚪 перейдіть у Room 2 → у «Інвентарі» натисніть свій предмет (він підсвітиться) → натисніть на скриню 🧰. Усередині — цифра коду.</p>
+    <div class="flex flex-wrap gap-3 justify-center items-center">${(S.room?H.o2:H.obj).map((o,i)=>`<button class="obj" onclick="look(${i})">${o[0]}</button>`).join('')}${S.room?'<button id="chest" class="obj" onclick="chest()">🧰</button>':''}<button class="btn" onclick="go()">🚪 ${P(['Next room','Go to the other room','Venture into the adjoining chamber'])}</button></div><p class="mt-3 text-sm opacity-70 text-center">${S.room?'📍 Room 2':'📍 Room 1'}</p>`;
+  }else if(S.st===2){
+    S.qa=S.qa||[];st.innerHTML=qz();say('🏛️');
+  }else if(S.st===3){
+    st.innerHTML=`<h2 class="font-bold text-lg mb-2">📖 Puzzle 4 · Read and answer</h2><p class="mb-3 p-3 rounded-lg bg-white/10">${P(H.t)}</p>
+    <p class="font-semibold mb-2">❓ ${P(H.q)}</p><div class="flex gap-2"><input id="a3" type="number" class="inp" placeholder="Number" onkeydown="if(event.key==='Enter')c3()"><button class="btn" onclick="c3()">OK</button></div>`;
+    say(P(['Read the text. Write a number.','Read the text carefully and write the number.','Peruse the passage and supply the numerical answer.']));
+  }else{
+    st.innerHTML=`<h2 class="font-bold text-lg mb-2">🔐 Final door · Enter the code</h2><p class="mb-3">${P(['Use the 3 numbers. Open the door!','Enter the three digits you have collected.','Enter the combination you have painstakingly pieced together.'])}</p>
+    <div class="flex gap-2 justify-center mb-3" id="lock">${[0,1,2].map(i=>`<input class="inp dig" maxlength="1" inputmode="numeric" oninput="this.value=this.value.replace(/\\D/g,'');if(this.value&&this.nextElementSibling)this.nextElementSibling.focus()">`).join('')}</div>
+    <div class="text-center"><button class="btn" onclick="c4()">🔓 Open</button></div>`;
+    say('🚪');
+  }
+}
+function bad(el){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400);say('❌ '+P(['Try again!','Not quite. Try again.','Regrettably not; give it another go.']))}
+function c1(){
+  const v=$('a1').value.trim().toLowerCase(),H=S.H;
+  if(v!==H.w)return bad($('stage'));
+  S.dg.push(S.d[0]);S.inv.push(H.it);S.st=1;render();
+  say(`✅ ${P(['Yes! You get a number and an item:','Correct! You find a number and an item:','Spot on! You have gained a digit and an item:'])} <b>${S.d[0]}</b> · ${H.it[0]} <b>${H.it[1]}</b>`);
+}
+function look(i){
+  const[e,n,a]=(S.room?S.H.o2:S.H.obj)[i],f=S.H.f[(S.room?3:0)+i];
+  say(`${e} `+P([`You find a ${n}. It is ${a}.`,`Among the shelves you notice a ${n}, which looks ${a}.`,`Tucked behind the clutter, a ${a} ${n} catches your eye, as though it had been waiting for you.`])+`<div class="mt-2 text-sm p-2 rounded-lg bg-white/10">💡 <b>Fun fact:</b> ${f[0]}<br><i class="opacity-70">${f[1]}</i></div>`);
+}
+function chest(){
+  const H=S.H;
+  if(S.open)return say('📦 '+P(['The chest is open.','The chest is already open.','The chest has already yielded its secret.']));
+  if(S.sel===null||S.inv[S.sel]!==H.it)return bad($('chest'))||say('🔒 '+P(['The chest is locked.','The chest is locked tight. Maybe something in your inventory fits.','The chest is firmly locked; perhaps one of your belongings is up to the task.']));
+  S.open=true;S.dg.push(S.d[1]);S.inv.splice(S.sel,1);S.sel=null;S.st=2;
+  say(`🎉 ${P(['It opens! A number:','Click! Inside is a number:','With a satisfying click, the lid creaks open, revealing the numeral'])} <b>${S.d[1]}</b>`);
+  setTimeout(render,1800);bar();
+}
+function c3(){
+  if(+$('a3').value!==S.H.a||$('a3').value==='')return bad($('stage'));
+  S.dg.push(S.H.a);S.st=4;render();
+}
+function c4(){
+  const v=[...document.querySelectorAll('#lock input')].map(i=>i.value).join('');
+  if(v!==S.dg.join(''))return bad($('lock'));
+  const s=(Date.now()-S.t0)/1000|0;
+  $('wt').textContent=tm(s/60|0)+':'+tm(s%60);$('wh').textContent=S.hints;
+  $('gl').innerHTML=(S.H.g+'|'+S.H.g2).split('|').map(x=>x.split(':')).map(([e,u])=>`<li class="bg-white/10 rounded-lg px-3 py-2"><b>${e}</b> — ${u}</li>`).join('');
+  $('game').classList.add('hidden');$('win').classList.remove('hidden');
+}
+function hint(){
+  S.hints++;const w=S.H.w,n=w.length;
+  const h=[
+   [`The word starts with "${w[0]}". It has ${n} letters.`,`Look at the letters. The first letter is "${w[0]}" and the word has ${n} letters.`,`Rearrange the jumbled letters; the initial letter is "${w[0]}" and the word runs to ${n} letters.`],
+   [`Go to the other room. Click the ${S.H.it[1]} in your bag. Then click the chest.`,`Visit the other room, select the item in your inventory, then use it on the chest.`,`Peruse every nook; the item you have acquired may well unlock the one thing that refuses to budge.`],
+   [`Think about the holiday and the fun facts.`,`Think about the holiday and the fun facts you found.`,`Draw on the trivia you have gleaned along the way.`],
+   [`Read the text again. Look for numbers.`,`Reread carefully and do a little arithmetic.`,`Scrutinise the figures mentioned and work out the remainder.`],
+   [`Use the 3 numbers. Put them in order: 1, 2, 3.`,`Combine the three digits you collected, in the order you found them.`,`The combination is the three digits you have amassed, in strict chronological order.`]];
+  say('💡 '+P(h[S.st]));
+}
+</script>
+</body>
+</html>
